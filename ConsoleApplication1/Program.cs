@@ -1,27 +1,28 @@
 ﻿using System;
+using static System.Math;
 
 namespace ConsoleApplication1
 {
     class Program
     {
         // Values declared in 01.40
-        static float altitude;          //altitude
-        static float velocity;          //vessel speed
-        static float mass;              //vessel mass
-        static float tensec;            //time
-        static float q;
-        static float i;
-        static float j;
-        static float burn;              //Burn qty
-        static float elapsed = 0;       //elapsed time
-        static float step;              //step
-        static float velMPH;            //vertical speed
+        static decimal altitude;        //altitude
+        static decimal velocity;        //vessel speed
+        static decimal mass;            //vessel mass
+        static decimal tensec;          //time
+        static decimal q;
+        static decimal i_alt;
+        static decimal j_vel;
+        static decimal burn;            //Burn qty
+        static decimal elapsed = 0;     //elapsed time
+        static decimal step;            //step
+        static decimal velMPH;          //vertical speed
         
         static string outcome;          //result message
 
-        const float netmass = 16500;    //fuel mass
-        const float z = 1.8F;
-        const float gravity = 0.001F;   //gravity
+        const decimal netmass = 16500;  //fuel mass
+        const decimal z = 1.8M;
+        const decimal gravity = 0.001M; //gravity
 
         static void Main(string[] args)
         {
@@ -65,11 +66,10 @@ namespace ConsoleApplication1
 
         static void GroupTwo()
         {
-
             // Elapsed Time
             Console.Write("{0,8:F0}", elapsed);
             // Altitude
-            Console.Write("{0,15}{1,7}", Math.Floor(altitude), Math.Floor(5280 * (altitude - Math.Floor(altitude))));
+            Console.Write("{0,15}{1,7}", Truncate(altitude), Truncate( 5280 * ( altitude - Truncate( altitude ))) );
             // VSI
             Console.Write("{0,15:F2}", 3600 * velocity);
             // Fuel
@@ -82,7 +82,7 @@ namespace ConsoleApplication1
                 string input = Console.ReadLine();
                 try
                 { 
-                    burn = float.Parse(input);
+                    burn = decimal.Parse(input);
                 }
                 catch (FormatException)
                 {
@@ -91,7 +91,7 @@ namespace ConsoleApplication1
                 if ((burn != 0) && (burn < 8) || (burn > 200))
                 {
                     Console.Write("NOT POSSIBLE");
-                    for (i = 1; i < 52; i++)
+                    for (i_alt = 1; i_alt < 52; i_alt++)
                     {
                         Console.Write(".");
                     }
@@ -109,11 +109,11 @@ namespace ConsoleApplication1
         {
             while (true)
             {
-                if (mass - netmass - 0.001 < 0) //3.10
+                if (mass - netmass - 0.001M < 0) //3.10
                 {
-                    GroupFour();
+                    GroupFive(true);
                 }
-                if (tensec - 0.001 < 0)
+                if (tensec - 0.001M < 0)
                 {
                     GroupTwo();
                 }
@@ -123,47 +123,62 @@ namespace ConsoleApplication1
                     step = (mass - netmass) / burn;
                 }
                 GroupNine();
-                if (i <= 0)
+                if (i_alt <= 0)
                 {
                     GroupSeven();
                 }
                 if (velocity > 0)
                 {
-                    if (j < 0)
+                    if (j_vel < 0)
                     {
-                        GroupEight();
+                        // GroupEight();
+                        do
+                        {
+                            velMPH = (1 - mass * gravity / (z * burn)) / 2;
+                            step = mass * velocity / (z * burn * (velMPH + (decimal)Sqrt((double)velMPH * (double)velMPH + (double)velocity / (double)z))) + .05M;
+                            GroupNine();
+                            if (i_alt <= 0)
+                            {
+                                GroupSeven();
+                            }
+                            GroupSix();
+                            if (j_vel > 0)
+                            {
+                                //GroupThree();
+                                continue;
+                            }
+                        } while (velocity > 0);
+
+                        continue;
                     }
                 }
                 GroupSix();
             }
         }
 // 03.80
-// 04.10
-        static void GroupFour()
-        {
-            Console.Write("FUEL OUT AT " + elapsed + " SECS\n");
-            step = ((float)Math.Sqrt(velocity * velocity + 2 * altitude * gravity) - velocity) / gravity;
-            velocity = velocity + gravity * step;
-            elapsed = elapsed + step;
-            GroupFive();
-        }
-// 04.40
 // 05.10
-        static void GroupFive() //260
+        static void GroupFive(bool outtagas) //260
         {
+            if (outtagas)
+            {
+                Console.Write("FUEL OUT AT " + elapsed + " SECS\n");
+                step = ((decimal)Sqrt((double)velocity * (double)velocity + 2 * (double)altitude * (double)gravity) - velocity) / gravity;
+                velocity = velocity + gravity * step;
+                elapsed = elapsed + step;
+            }
             velMPH = 3600 * velocity;
             Console.Write("ON THE MOON AT {0,8:F2} SECS\n", elapsed);
             Console.Write("IMPACT VELOCITY OF {0,8:F2} M.P.H.\nFUEL LEFT:{1,9:F2} LBS\n", velMPH, mass - netmass);
             outcome = "CRAFT DAMAGED... YOU'RE STRANDED HERE UNTIL A RESCUE\nPARTY ARRIVES. HOPE YOU HAVE ENOUGH OXYGEN!\n";
             if (velMPH > 60)
             {
-                outcome = string.Format ("SORRY,BUT THERE WERE NO SURVIVORS-YOU BLEW IT!\nIN FACT YOU BLASTED A NEW LUNAR CRATER{0,9:F2} FT. DEEP\n", velMPH * .277);
+                outcome = string.Format ("SORRY,BUT THERE WERE NO SURVIVORS-YOU BLEW IT!\nIN FACT YOU BLASTED A NEW LUNAR CRATER{0,9:F2} FT. DEEP\n", velMPH * .277777M);
             }
             if (velMPH <= 10)
             {
                 outcome = "GOOD LANDING (COULD BE BETTER)\n";
             }
-            if (velMPH <= 1.2)
+            if (velMPH <= 1.2M)
             {
                 outcome = "PERFECT LANDING!\n";
             }
@@ -192,9 +207,8 @@ namespace ConsoleApplication1
             elapsed = elapsed + step;
             tensec = tensec - step;
             mass = mass - step * burn;
-            altitude = i;
-            velocity = j;
-            //Console.WriteLine("L={0,8} S={1,8} T={2,8} M={3,8} A={4,8} V={5,8}", elapsed, step, tensec, mass, altitude, velocity);
+            altitude = i_alt;
+            velocity = j_vel;
             return;
         }                       
 // 06.10
@@ -203,50 +217,30 @@ namespace ConsoleApplication1
         {
             while (true)
             {
-                if(step - 0.005 < 0)
+                if(step - 0.005M < 0)
                 {
-                    GroupFive();
+                    GroupFive(false);
                 }
-                step = 2 * altitude / (velocity + (float)Math.Sqrt(velocity * velocity + 2 * altitude * (gravity - z * burn / mass)));
+                step = 2 * altitude / (velocity + (decimal)Sqrt((double)velocity * (double)velocity + 2 * (double)altitude * ((double)gravity - (double)z * (double)burn / (double)mass)));
                 GroupNine();
                 GroupSix();
             }
         }                       
 // 07.30
-// 08.10
-        static void GroupEight()    
-        {
-            do
-            {
-                velMPH = (1 - mass * gravity / (z * burn)) / 2;
-                step = mass * velocity / (z * burn * (velMPH + (float)Math.Sqrt(velMPH * velMPH + velocity / z))) + .05F;
-                GroupNine();
-                if (i <= 0)
-                {
-                    GroupSeven();
-                }
-                GroupSix();
-                if (j > 0)
-                {
-                    GroupThree();
-                }
-            } while (velocity > 0);
-            GroupThree();
-            Console.Write("ERROR");
-        }                           
-// 08.30
+
 // 09.10 (Subroutine)
         static void GroupNine()   
         {
-            float q2 = (float)Math.Pow(q, 2);
-            float q3 = (float)Math.Pow(q, 3);
-            float q4 = (float)Math.Pow(q, 4);
-            float q5 = (float)Math.Pow(q, 5);
-            float neg_q = q * -1;
-
             q = step * burn / mass;
-            j = velocity + gravity * step + z * (neg_q - q * q / 2 - (q3 / 3) - (q4 / 4) - (q5 / 5));
-            i = altitude - gravity * step * step / 2 - velocity * step + z * step * ((q / 2) + (q2 / 6) + (q3 / 12) + (q4 / 20) + (q5 / 30));
+
+            decimal q2 = q * q;  //(decimal)Pow((double)q, 2);  I see no point in all this casting...
+            decimal q3 = q * q * q; //(decimal)Pow((double)q, 3);
+            decimal q4 = q * q * q * q; //(decimal)Pow((double)q, 4);
+            decimal q5 = q * q * q * q * q; //(decimal)Pow((double)q, 5);
+            decimal neg_q = q * -1;
+            Console.WriteLine("{0} {1} {2} {3}", q2, q3, q4, q5);
+            j_vel = velocity + gravity * step + z * (neg_q - q2 / 2 - q3 / 3 - q4 / 4 - q5 / 5);
+            i_alt = altitude - gravity * step * step / 2 - velocity * step + z * step * (q / 2 + q2 / 6 + q3 / 12 + q4 / 20 + q5 / 30);
 
             return;
         }
@@ -263,12 +257,31 @@ namespace ConsoleApplication1
         static void TwoPointSevenTwo()
         {
             Console.Write("NOT POSSIBLE");
-            for(i=1; i < 52; i++)
+            for(int x=1; x < 52; x++)
             {
                 Console.Write(".");
             }
             Console.Write("K=:");
             return;
+        }
+
+        static decimal SquareRoot(decimal number)
+        {
+            decimal sqrt = 0;
+            decimal tempNumber1, tempNumber2;
+            decimal e = 0.00000000000000000001m;
+
+            sqrt = number;
+            tempNumber2 = sqrt * sqrt;
+
+            while (tempNumber2 - number >= e)
+            {
+                tempNumber1 = (sqrt + (number / sqrt)) / 2;
+                sqrt = tempNumber1;
+                tempNumber2 = sqrt * sqrt;
+            }
+
+            return sqrt;
         }
     }
 }
