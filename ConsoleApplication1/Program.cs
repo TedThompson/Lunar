@@ -5,21 +5,21 @@ namespace ConsoleApplication1
     class Program
     {
         // Values declared in 01.40
-        static float altitude;         //altitude
-        static float velocity;         //vessel speed
-        static float mass;             //vessel mass
-        static float tensec;           //time
+        static float altitude;          //altitude
+        static float velocity;          //vessel speed
+        static float mass;              //vessel mass
+        static float tensec;            //time
         static float q;
         static float i;
         static float j;
-        static float burn;             //Burn qty
-        static float elapsed = 0;      //elapsed time
-        static float step;             //step
-        static float velMPH;           //vertical speed
+        static float burn;              //Burn qty
+        static float elapsed = 0;       //elapsed time
+        static float step;              //step
+        static float velMPH;            //vertical speed
         
         static string outcome;          //result message
 
-        const float netmass = 16500;  //fuel mass
+        const float netmass = 16500;    //fuel mass
         const float z = 1.8F;
         const float gravity = 0.001F;   //gravity
 
@@ -43,20 +43,18 @@ namespace ConsoleApplication1
 
             // 01.04
             //Start Port of Original Program
-            Console.WriteLine("CONTROL CALLING LUNAR MODULE. MANUAL CONTROL IS NECESSARY");
-            Console.WriteLine("YOU MAY RESET FUEL RATE K EACH 10 SECS TO 0 OR ANY VALUE");
-            Console.WriteLine("BETWEEN 8 & 200 LBS/SEC. YOU'VE 16000 LBS FUEL. ESTIMATED");
-            Console.WriteLine("FREE FALL IMPACT TIME-120 SECS. CAPSULE WEIGHT-32500 LBS");
+            Console.Write("CONTROL CALLING LUNAR MODULE. MANUAL CONTROL IS NECESSARY\n");
+            Console.Write("YOU MAY RESET FUEL RATE K EACH 10 SECS TO 0 OR ANY VALUE\n");
+            Console.Write("BETWEEN 8 & 200 LBS/SEC. YOU'VE 16000 LBS FUEL. ESTIMATED\n");
+            Console.Write("FREE FALL IMPACT TIME-120 SECS. CAPSULE WEIGHT-32500 LBS\n");
             GroupOne();
         }
 
         static void GroupOne()
         {
-            Console.WriteLine("FIRST RADAR CHECK COMING UP");
-            Console.WriteLine("");
-            Console.WriteLine("");
-            Console.WriteLine("COMMENCE LANDING PROCEDURE");
-            Console.WriteLine("TIME,SECS   ALTITUDE,MILES+FEET   VELOCITY,MPH   FUEL,LBS   FUEL RATE");
+            Console.Write("FIRST RADAR CHECK COMING UP\n\n\n");
+            Console.Write("COMMENCE LANDING PROCEDURE\nTIME,SECS   ALTITUDE,");
+            Console.Write("MILES+FEET   VELOCITY,MPH   FUEL,LBS   FUEL RATE\n");
 
             //Init Variables 04.10 (G[ravity], N[etmass] and Z are constants and defined above)
             altitude = 120;
@@ -143,8 +141,7 @@ namespace ConsoleApplication1
 // 04.10
         static void GroupFour()
         {
-            Console.WriteLine("FUEL OUT AT " + elapsed + " SECS");
-            //s = ((v * -1) + Math.Sqrt(v * v + 2 * altitude * gravity)) / gravity;
+            Console.Write("FUEL OUT AT " + elapsed + " SECS\n");
             step = ((float)Math.Sqrt(velocity * velocity + 2 * altitude * gravity) - velocity) / gravity;
             velocity = velocity + gravity * step;
             elapsed = elapsed + step;
@@ -155,9 +152,8 @@ namespace ConsoleApplication1
         static void GroupFive() //260
         {
             velMPH = 3600 * velocity;
-            Console.WriteLine("ON THE MOON AT {0,8:F2} SECS", elapsed);
-            Console.WriteLine("IMPACT VELOCITY OF {0,8:F2} M.P.H.", velMPH);
-            Console.WriteLine("FUEL LEFT:{0,9:F2} LBS", mass - netmass);
+            Console.Write("ON THE MOON AT {0,8:F2} SECS\n", elapsed);
+            Console.Write("IMPACT VELOCITY OF {0,8:F2} M.P.H.\nFUEL LEFT:{1,9:F2} LBS\n", velMPH, mass - netmass);
             outcome = "CRAFT DAMAGED... YOU'RE STRANDED HERE UNTIL A RESCUE\nPARTY ARRIVES. HOPE YOU HAVE ENOUGH OXYGEN!\n";
             if (velMPH > 60)
             {
@@ -172,23 +168,16 @@ namespace ConsoleApplication1
                 outcome = "PERFECT LANDING!\n";
             }
             Console.WriteLine(outcome);
-            Console.WriteLine("");
-            Console.WriteLine("");
-            Console.WriteLine("");
-            Console.WriteLine("");
-            Console.WriteLine("TRY AGAIN?");
+            Console.Write("\n\n\n\nTRY AGAIN?\n");
             while (true)
             {
                 Console.Write("(ANS. YES OR NO)");
                 string p = Console.ReadLine();
                 if (p.ToUpper() == "NO")
                 {
-                    Console.WriteLine("CONTROL OUT");
-                    Console.WriteLine("");
-                    Console.WriteLine("");
-                    Console.WriteLine("");
-                    System.Threading.Thread.Sleep(1000);
-                    Environment.Exit(1);
+                    Console.Write("CONTROL OUT\n\n\n");
+                    System.Threading.Thread.Sleep(3000); // Give folks time to see Control Out before the window closes
+                    Environment.Exit(1); 
                 }
                 else if (p.ToUpper() == "YES")
                 {
@@ -205,6 +194,7 @@ namespace ConsoleApplication1
             mass = mass - step * burn;
             altitude = i;
             velocity = j;
+            //Console.WriteLine("L={0,8} S={1,8} T={2,8} M={3,8} A={4,8} V={5,8}", elapsed, step, tensec, mass, altitude, velocity);
             return;
         }                       
 // 06.10
@@ -221,7 +211,6 @@ namespace ConsoleApplication1
                 GroupNine();
                 GroupSix();
             }
-            Console.Write("ERROR");
         }                       
 // 07.30
 // 08.10
@@ -229,7 +218,7 @@ namespace ConsoleApplication1
         {
             do
             {
-                velMPH = (1 - mass * gravity / z * burn) / 2;
+                velMPH = (1 - mass * gravity / (z * burn)) / 2;
                 step = mass * velocity / (z * burn * (velMPH + (float)Math.Sqrt(velMPH * velMPH + velocity / z))) + .05F;
                 GroupNine();
                 if (i <= 0)
@@ -237,7 +226,7 @@ namespace ConsoleApplication1
                     GroupSeven();
                 }
                 GroupSix();
-                if (j >= 0)
+                if (j > 0)
                 {
                     GroupThree();
                 }
@@ -256,19 +245,21 @@ namespace ConsoleApplication1
             float neg_q = q * -1;
 
             q = step * burn / mass;
-            j = velocity + gravity * step + z * (neg_q - q2 / 2 - q3 / 3 - q4 / 4 - q5 / 5);
-            i = altitude - gravity * step * step / 2 - velocity * step + z * step * (q / 2 + q2 / 6 + q3 / 12 + q4 / 20 + q5 / 30);
+            j = velocity + gravity * step + z * (neg_q - q * q / 2 - (q3 / 3) - (q4 / 4) - (q5 / 5));
+            i = altitude - gravity * step * step / 2 - velocity * step + z * step * ((q / 2) + (q2 / 6) + (q3 / 12) + (q4 / 20) + (q5 / 30));
 
             return;
-        }                       
+        }
 // 09.40
-// Routine by me for centering header text.
+
+        // Routine added for centering header text.
         static void centerPrint(string msg)
         {
             Console.WriteLine("{0," + (Console.WindowWidth + msg.Length) / 2 + "}", msg);
         }
 
-        //Print routine found at 02.72 of the original program to inform the player they made an invalid entry.
+        // Print routine found at 02.72 of the original program to inform the player 
+        // they made an invalid entry.
         static void TwoPointSevenTwo()
         {
             Console.Write("NOT POSSIBLE");
@@ -338,5 +329,7 @@ namespace ConsoleApplication1
     09.40 S I=A-G*S*S/2-V*S+Z*S*(Q/2+Q^2/6+Q^3/12+Q^4/20*Q^5/30)
     *
 
+    Information on FOCAL can be found at the following address:
+    http://homepage.divms.uiowa.edu/~jones/pdp8/focal/focal69.html#summary
 //  ---------1---------2---------3----^----4---------5---------6---------7
 */
