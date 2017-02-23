@@ -1,18 +1,17 @@
 ﻿using System;
 using static System.Math;
 
-namespace ConsoleApplication1
+namespace Rocket // Original name
 {
-    class Program
+    class Lunar  // Name used for later versions in BASIC
     {
-        // Values declared in 01.40
         static decimal altitude;        //altitude
         static decimal velocity;        //vessel speed
         static decimal mass;            //vessel mass
         static decimal tensec;          //time
-        static decimal q;
-        static decimal i_alt;
-        static decimal j_vel;
+        static decimal quantity;
+        static decimal tmpAlt;
+        static decimal tmpVel;
         static decimal burn;            //Burn qty
         static decimal elapsed = 0;     //elapsed time
         static decimal step;            //step
@@ -23,6 +22,8 @@ namespace ConsoleApplication1
         const decimal netmass = 16500;  //fuel mass
         const decimal z = 1.8M;
         const decimal gravity = 0.001M; //gravity
+
+        static bool gameover = false;
 
         static void Main(string[] args)
         {
@@ -38,9 +39,7 @@ namespace ConsoleApplication1
             centerPrint("LUNAR");
             centerPrint("Originally written for the DEC PDP-8 by Jim Storer, 1969");
             centerPrint("Ported to C# by Ted Thompson, 2017");
-            Console.WriteLine("======================================================================");
-            Console.WriteLine("");
-            Console.WriteLine("");
+            Console.WriteLine("======================================================================\n\n");
 
             // 01.04
             //Start Port of Original Program
@@ -48,120 +47,140 @@ namespace ConsoleApplication1
             Console.Write("YOU MAY RESET FUEL RATE K EACH 10 SECS TO 0 OR ANY VALUE\n");
             Console.Write("BETWEEN 8 & 200 LBS/SEC. YOU'VE 16000 LBS FUEL. ESTIMATED\n");
             Console.Write("FREE FALL IMPACT TIME-120 SECS. CAPSULE WEIGHT-32500 LBS\n");
-            GroupOne();
+
+            do
+            {
+                StartGame();
+            } while (!gameover);
+
+            Console.Write("CONTROL OUT\n\n\n*");
+            System.Threading.Thread.Sleep(3000); // Give folks time to see Control Out before the window closes
+            Environment.Exit(1);
         }
 
-        static void GroupOne()
+        static void StartGame()
         {
-            Console.Write("FIRST RADAR CHECK COMING UP\n\n\n");
-            Console.Write("COMMENCE LANDING PROCEDURE\nTIME,SECS   ALTITUDE,");
-            Console.Write("MILES+FEET   VELOCITY,MPH   FUEL,LBS   FUEL RATE\n");
-
             //Init Variables 04.10 (G[ravity], N[etmass] and Z are constants and defined above)
             altitude = 120;
             velocity = 1;
             mass = 32500;
-            GroupTwo();
-        }
+            elapsed = 0; //Not in original FOCAL code, but appears in later versions, 
+                         //so I'm assumeing it's absense was a bug.  Without this the time keeps
+                         //accumulating on subsequent play throughs.
 
-        static void GroupTwo()
-        {
-            // Elapsed Time
-            Console.Write("{0,8:F0}", elapsed);
-            // Altitude
-            Console.Write("{0,15}{1,7}", Truncate(altitude), Truncate( 5280 * ( altitude - Truncate( altitude ))) );
-            // VSI
-            Console.Write("{0,15:F2}", 3600 * velocity);
-            // Fuel
-            Console.Write("{0,12:F1}", mass - netmass);
-            // Burn Setting Prompt
-            Console.Write("{0,9}", "K=:");
+            Console.Write("FIRST RADAR CHECK COMING UP\n\n\n");
+            Console.Write("COMMENCE LANDING PROCEDURE\nTIME,SECS   ALTITUDE,");
+            Console.Write("MILES+FEET   VELOCITY,MPH   FUEL,LBS   FUEL RATE\n");
 
-            do
-            {
-                string input = Console.ReadLine();
-                try
-                { 
-                    burn = decimal.Parse(input);
-                }
-                catch (FormatException)
-                {
-                    burn = (input == "") ? 0 : -1;
-                }
-                if ((burn != 0) && (burn < 8) || (burn > 200))
-                {
-                    Console.Write("NOT POSSIBLE");
-                    for (i_alt = 1; i_alt < 52; i_alt++)
-                    {
-                        Console.Write(".");
-                    }
-                    Console.Write("K=:");
-                    burn = -1;
-                }
-            } while (burn == -1); // parse loop
-
-            tensec = 10;
-            GroupThree();
-        }
-// 02.73
-// 03.10
-        static void GroupThree()
-        {
             while (true)
             {
-                if (mass - netmass - 0.001M < 0) //3.10
-                {
-                    GroupFive(true);
-                }
-                if (tensec - 0.001M < 0)
-                {
-                    GroupTwo();
-                }
-                step = tensec; // 03.10 end statement
-                if (netmass + step * burn - mass > 0)
-                {
-                    step = (mass - netmass) / burn;
-                }
-                GroupNine();
-                if (i_alt <= 0)
-                {
-                    GroupSeven();
-                }
-                if (velocity > 0)
-                {
-                    if (j_vel < 0)
-                    {
-                        // GroupEight();
-                        do
-                        {
-                            velMPH = (1 - mass * gravity / (z * burn)) / 2;
-                            step = mass * velocity / (z * burn * (velMPH + (decimal)Sqrt((double)velMPH * (double)velMPH + (double)velocity / (double)z))) + .05M;
-                            GroupNine();
-                            if (i_alt <= 0)
-                            {
-                                GroupSeven();
-                            }
-                            GroupSix();
-                            if (j_vel > 0)
-                            {
-                                //GroupThree();
-                                continue;
-                            }
-                        } while (velocity > 0);
+                // Elapsed Time
+                Console.Write("{0,8:F0}", elapsed);
+                // Altitude
+                Console.Write("{0,15}{1,7}", Truncate(altitude), Truncate(5280 * (altitude - Truncate(altitude))));
+                // VSI
+                Console.Write("{0,15:F2}", 3600 * velocity);
+                // Fuel
+                Console.Write("{0,12:F1}", mass - netmass);
+                // Burn Setting Prompt
+                Console.Write("{0,9}", "K=:");
 
+                do
+                {
+                    string input = Console.ReadLine();
+                    try
+                    {
+                        burn = decimal.Parse(input);
+                    }
+                    catch (FormatException)
+                    {
+                        burn = (input == "") ? 0 : -1;
+                    }
+                    if ((burn != 0) && (burn < 8) || (burn > 200))
+                    {
+                        Console.Write("NOT POSSIBLE");
+                        for (tmpAlt = 1; tmpAlt < 52; tmpAlt++)
+                        {
+                            Console.Write(".");
+                        }
+                        Console.Write("K=:");
+                        burn = -1;
+                    }
+                } while (burn == -1); // parse loop
+
+                tensec = 10;
+                do
+                {
+                    if (mass - netmass - 0.001M < 0) //3.10
+                    {
+                        AfterActionReport(true, false);
+                        return;
+                    }
+                    if (tensec - 0.001M < 0)
+                    {
                         continue;
                     }
-                }
-                GroupSix();
+                    step = tensec; // 03.10 end statement
+                    if (netmass + step * burn - mass > 0)
+                    {
+                        step = (mass - netmass) / burn;
+                    }
+                    DecentCalc();
+                    if (tmpAlt <= 0)
+                    {
+                        AfterActionReport(false, true);
+                        return;
+                    }
+                    if (velocity > 0)
+                    {
+                        if (tmpVel < 0)
+                        {
+                            // GroupEight();
+                            do
+                            {
+                                velMPH = (1 - mass * gravity / (z * burn)) / 2;
+                                step = mass * velocity / (z * burn * (velMPH + (decimal)Sqrt((double)velMPH * (double)velMPH + (double)velocity / (double)z))) + .05M;
+                                DecentCalc();
+                                if (tmpAlt <= 0)
+                                {
+                                    AfterActionReport(false, true);
+                                    return;
+                                }
+                                EndTurn();
+                                if (tmpVel > 0)
+                                {
+                                    //GroupThree();
+                                    continue;
+                                }
+                            } while (velocity > 0);
+
+                            continue;
+                        }
+                    }
+                    EndTurn();
+                } while (tensec - 0.001M > 0);
             }
         }
-// 03.80
-// 05.10
-        static void GroupFive(bool outtagas) //260
+
+        /// <summary>
+        /// End of game report on outcome
+        /// </summary>
+        /// <param name="outtagas">Are we out of fuel</param>
+        /// <param name="impacted">Did we descend below 0ft in the last 10 seconds</param>
+        static void AfterActionReport(bool outtagas, bool impacted) //260
         {
+            if (impacted)
+            {
+                while (step - 0.005M > 0)
+                {
+                    step = 2 * altitude / (velocity + (decimal)Sqrt((double)velocity * (double)velocity + 2 * (double)altitude * ((double)gravity - (double)z * (double)burn / (double)mass)));
+                    DecentCalc();
+                    EndTurn();
+                }
+            }
             if (outtagas)
             {
-                Console.Write("FUEL OUT AT " + elapsed + " SECS\n");
+                Console.Write("FUEL OUT AT {0,8:F2} SECS\n", elapsed);
                 step = ((decimal)Sqrt((double)velocity * (double)velocity + 2 * (double)altitude * (double)gravity) - velocity) / gravity;
                 velocity = velocity + gravity * step;
                 elapsed = elapsed + step;
@@ -169,18 +188,30 @@ namespace ConsoleApplication1
             velMPH = 3600 * velocity;
             Console.Write("ON THE MOON AT {0,8:F2} SECS\n", elapsed);
             Console.Write("IMPACT VELOCITY OF {0,8:F2} M.P.H.\nFUEL LEFT:{1,9:F2} LBS\n", velMPH, mass - netmass);
-            outcome = "CRAFT DAMAGED... YOU'RE STRANDED HERE UNTIL A RESCUE\nPARTY ARRIVES. HOPE YOU HAVE ENOUGH OXYGEN!\n";
-            if (velMPH > 60)
+
+            if (velMPH <= 1)
             {
-                outcome = string.Format ("SORRY,BUT THERE WERE NO SURVIVORS-YOU BLEW IT!\nIN FACT YOU BLASTED A NEW LUNAR CRATER{0,9:F2} FT. DEEP\n", velMPH * .277777M);
+                outcome = "PERFECT LANDING !-(LUCKY)\n";
             }
-            if (velMPH <= 10)
+            else if (velMPH <= 10)
             {
-                outcome = "GOOD LANDING (COULD BE BETTER)\n";
+                outcome = "GOOD LANDING-(COULD BE BETTER)";
             }
-            if (velMPH <= 1.2M)
+            else if (velMPH <= 22)
             {
-                outcome = "PERFECT LANDING!\n";
+                outcome = "CONGRATULATIONS ON A POOR LANDING";
+            }
+            else if (velMPH < 40)
+            {
+                outcome = "CRAFT DAMAGE. GOOD LUCK";
+            }
+            else if (velMPH < 60)
+            {
+                outcome = "CRASH LANDING-YOU'VE 5 HRS OXYGEN";
+            }
+            else
+            {
+                outcome = string.Format("SORRY,BUT THERE WERE NO SURVIVORS-YOU BLEW IT!\nIN FACT YOU BLASTED A NEW LUNAR CRATER{0,9:F2} FT. DEEP\n", velMPH * .277777M);
             }
             Console.WriteLine(outcome);
             Console.Write("\n\n\n\nTRY AGAIN?\n");
@@ -190,63 +221,48 @@ namespace ConsoleApplication1
                 string p = Console.ReadLine();
                 if (p.ToUpper() == "NO")
                 {
-                    Console.Write("CONTROL OUT\n\n\n");
-                    System.Threading.Thread.Sleep(3000); // Give folks time to see Control Out before the window closes
-                    Environment.Exit(1); 
+                    gameover = true;
+                    return;
                 }
                 else if (p.ToUpper() == "YES")
                 {
-                    GroupOne();
+                    return;
                 }
             }
         }
-// 05.98
+
 // 06.10 (Subroutine)
-        static void GroupSix()  
+        static void EndTurn()  
         {
             elapsed = elapsed + step;
             tensec = tensec - step;
             mass = mass - step * burn;
-            altitude = i_alt;
-            velocity = j_vel;
+            altitude = tmpAlt;
+            velocity = tmpVel;
             return;
         }                       
-// 06.10
-// 07.10
-        static void GroupSeven()
-        {
-            while (true)
-            {
-                if(step - 0.005M < 0)
-                {
-                    GroupFive(false);
-                }
-                step = 2 * altitude / (velocity + (decimal)Sqrt((double)velocity * (double)velocity + 2 * (double)altitude * ((double)gravity - (double)z * (double)burn / (double)mass)));
-                GroupNine();
-                GroupSix();
-            }
-        }                       
-// 07.30
 
 // 09.10 (Subroutine)
-        static void GroupNine()   
+        static void DecentCalc()   
         {
-            q = step * burn / mass;
+            quantity = step * burn / mass;
 
-            decimal q2 = q * q;  //(decimal)Pow((double)q, 2);  I see no point in all this casting...
-            decimal q3 = q * q * q; //(decimal)Pow((double)q, 3);
-            decimal q4 = q * q * q * q; //(decimal)Pow((double)q, 4);
-            decimal q5 = q * q * q * q * q; //(decimal)Pow((double)q, 5);
-            decimal neg_q = q * -1;
-            Console.WriteLine("{0} {1} {2} {3}", q2, q3, q4, q5);
-            j_vel = velocity + gravity * step + z * (neg_q - q2 / 2 - q3 / 3 - q4 / 4 - q5 / 5);
-            i_alt = altitude - gravity * step * step / 2 - velocity * step + z * step * (q / 2 + q2 / 6 + q3 / 12 + q4 / 20 + q5 / 30);
+            decimal q2 = quantity * quantity;  
+            decimal q3 = quantity * quantity * quantity; 
+            decimal q4 = quantity * quantity * quantity * quantity; 
+            decimal q5 = quantity * quantity * quantity * quantity * quantity; 
+            decimal neg_q = quantity * -1;
+            tmpVel = velocity + gravity * step + z * (neg_q - q2 / 2 - q3 / 3 - q4 / 4 - q5 / 5);
+            tmpAlt = altitude - gravity * step * step / 2 - velocity * step + z * step * (quantity / 2 + q2 / 6 + q3 / 12 + q4 / 20 + q5 / 30);
 
             return;
         }
-// 09.40
 
         // Routine added for centering header text.
+        /// <summary>
+        /// Print msg centered in window
+        /// </summary>
+        /// <param name="msg">String to print</param>
         static void centerPrint(string msg)
         {
             Console.WriteLine("{0," + (Console.WindowWidth + msg.Length) / 2 + "}", msg);
@@ -263,25 +279,6 @@ namespace ConsoleApplication1
             }
             Console.Write("K=:");
             return;
-        }
-
-        static decimal SquareRoot(decimal number)
-        {
-            decimal sqrt = 0;
-            decimal tempNumber1, tempNumber2;
-            decimal e = 0.00000000000000000001m;
-
-            sqrt = number;
-            tempNumber2 = sqrt * sqrt;
-
-            while (tempNumber2 - number >= e)
-            {
-                tempNumber1 = (sqrt + (number / sqrt)) / 2;
-                sqrt = tempNumber1;
-                tempNumber2 = sqrt * sqrt;
-            }
-
-            return sqrt;
         }
     }
 }
