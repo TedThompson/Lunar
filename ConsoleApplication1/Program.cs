@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using static System.Math;
 
 namespace Rocket // Original name
@@ -23,19 +24,47 @@ namespace Rocket // Original name
         const decimal z = 1.8M;
         const decimal gravity = 0.001M; //gravity
 
-        static bool gameover = false;
+        static bool gameover = false;   //Flag to quit game
+        
+        /* Below is code to simply disable the Maximize button, Minimize button, and Size
+         * menu option so the window will always mimic the fixed width display (printer  
+         * really) of a PDP-8 
+         */
+        
+        private const int MF_BYCOMMAND = 0x00000000;
+        public const int SC_SIZE = 0xF000;
+        public const int SC_MINIMIZE = 0xF020;
+        public const int SC_MAXIMIZE = 0xF030;
+
+        [DllImport("user32.dll")]
+        public static extern int DeleteMenu(IntPtr hMenu, int nPosition, int wFlags);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+
+        [DllImport("kernel32.dll", ExactSpelling = true)]
+        private static extern IntPtr GetConsoleWindow();
+
+        /* End of console control code */
 
         static void Main(string[] args)
         {
-            //Window Setup
+            // Window Setup
+            // These DeleteMenu calls do the dirty work of nuking the unwanted buttons / options
+            DeleteMenu(GetSystemMenu(GetConsoleWindow(), false), SC_SIZE, MF_BYCOMMAND);
+            DeleteMenu(GetSystemMenu(GetConsoleWindow(), false), SC_MINIMIZE, MF_BYCOMMAND);
+            DeleteMenu(GetSystemMenu(GetConsoleWindow(), false), SC_MAXIMIZE, MF_BYCOMMAND);
+
+            // Set up size, titlebar, and colors
             Console.SetWindowSize(70, 25);
             Console.SetBufferSize(70, 25);
             Console.Title = "LUNAR - Jim Storer, Ted Thompson";
             Console.BackgroundColor = ConsoleColor.Black;
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Clear();
+            // End window setup
 
-            //Print header on the screen.
+            // Print header on the screen.
             centerPrint("LUNAR");
             centerPrint("Originally written for the DEC PDP-8 by Jim Storer, 1969");
             centerPrint("Ported to C# by Ted Thompson, 2017");
@@ -60,13 +89,13 @@ namespace Rocket // Original name
 
         static void StartGame()
         {
-            //Init Variables 04.10 (G[ravity], N[etmass] and Z are constants and defined above)
+            // Init Variables 04.10 (G[ravity], N[etmass] and Z are constants and defined above)
             altitude = 120;
             velocity = 1;
             mass = 32500;
-            elapsed = 0; //Not in original FOCAL code, but appears in later versions, 
-                         //so I'm assumeing it's absense was a bug.  Without this the time keeps
-                         //accumulating on subsequent play throughs.
+            elapsed = 0; // Not in original FOCAL code, but appears in later versions, 
+                         // so I'm assumeing it's absense was a bug.  Without this the time keeps
+                         // accumulating on subsequent play throughs.
 
             Console.Write("FIRST RADAR CHECK COMING UP\n\n\n");
             Console.Write("COMMENCE LANDING PROCEDURE\nTIME,SECS   ALTITUDE,");
@@ -111,7 +140,7 @@ namespace Rocket // Original name
                 tensec = 10;
                 do
                 {
-                    if (mass - netmass - 0.001M < 0) //3.10
+                    if (mass - netmass - 0.001M < 0) // 3.10
                     {
                         AfterActionReport(true, false);
                         return;
@@ -149,7 +178,7 @@ namespace Rocket // Original name
                                 EndTurn();
                                 if (tmpVel > 0)
                                 {
-                                    //GroupThree();
+                                    // GroupThree();
                                     continue;
                                 }
                             } while (velocity > 0);
@@ -339,7 +368,7 @@ namespace Rocket // Original name
     09.40 S I=A-G*S*S/2-V*S+Z*S*(Q/2+Q^2/6+Q^3/12+Q^4/20*Q^5/30)
     *
 
-    Information on FOCAL can be found at the following address:
+    Information on FOCAL69 can be found at the following address:
     http://homepage.divms.uiowa.edu/~jones/pdp8/focal/focal69.html#summary
 //  ---------1---------2---------3----^----4---------5---------6---------7
 */
